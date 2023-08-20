@@ -1,1 +1,1 @@
-# [scales-practice.github.io](https://scales-practice.github.io/)
+# [scales-practice](https://jaspwr.github.io/scales-practice)
