@@ -1,0 +1,295 @@
+<body>
+    <div class="question">
+        <span id="note"></span>
+        note of
+        <span id="scale"></span>
+        <span id="mode"></span>
+    </div>
+
+    <div>
+        <canvas id="piano" width="400" height="250">
+        </canvas>
+    </div>
+
+    <div class="scores">
+        Correct: <span id="correct-count"></span>
+        Incorrect: <span id="incorrect-count"></span>
+    </div>
+
+    <div>
+        <button id="next" ;>Next</button>
+    </div>
+</body>
+
+<style>
+    .question {
+        font-size: 30px;
+        height: 40px;
+    }
+</style>
+
+<script>
+    const note_elem = document.getElementById("note");
+    const scale_elem = document.getElementById("scale");
+    const mode_elem = document.getElementById("mode");
+    const piano_canvas = document.getElementById("piano");
+    const next_button_elem = document.getElementById("next");
+    const correct_count_elem = document.getElementById("correct-count");
+    const incorrect_count_elem = document.getElementById("incorrect-count");
+
+    const piano_ctx = piano_canvas.getContext("2d");
+
+    let game_state = "guessing";
+
+    let scores = {
+        correct: 0,
+        incorrect: 0,
+    };
+
+    const solution = {
+        key: 0,
+        note: 0,
+        major: true,
+    };
+
+    const clamp_note = (note) => note % 12;
+
+    const note_name = (note) => {
+        switch (clamp_note(note)) {
+            case 0: return "C";
+            case 1: return "C♯ / D♭";
+            case 2: return "D";
+            case 3: return "D♯ / E♭";
+            case 4: return "E";
+            case 5: return "F";
+            case 6: return "F♯ / G♭";
+            case 7: return "G";
+            case 8: return "G♯ / A♭";
+            case 9: return "A";
+            case 10: return "A♯ / B♭";
+            case 11: return "B";
+        }
+    };
+
+    const roman_numerals = (note) => {
+        const rem = note % 5;
+        let number = "";
+
+        if (note >= 5) {
+            number += "V";
+        }
+
+        if (rem > 3) {
+            number = "IV";
+        } else {
+            for (let i = 0; i < rem; i++) {
+                number += "I";
+            }
+        }
+
+        return number;
+    };
+
+    const mode_name = (major) => major ? "major" : "minor";
+
+    const key_colour = (key) => {
+        switch (clamp_note(key)) {
+            case 0: return "violet";
+            case 1: return "purple";
+            case 2: return "blue";
+            case 3: return "01bcb0";
+            case 4: return "green";
+            case 5: return "lime";
+            case 6: return "#AA0";
+            case 7: return "orange";
+            case 8: return "red";
+            case 9: return "crimson";
+            case 10: return "magenta";
+            case 11: return "indigo";
+        }
+    }
+
+    const new_question = () => {
+        solution.key = clamp_note(Math.floor(Math.random() * 11));
+        solution.note = Math.floor(Math.random() * 7);
+        solution.major = Math.random() > 0.2;
+
+        note_elem.innerHTML = roman_numerals(solution.note + 1);
+        scale_elem.innerHTML = note_name(solution.key);
+        mode_elem.innerHTML = mode_name(solution.major);
+
+        if (!solution.major) {
+            mode_elem.style.color = "red";
+        } else {
+            mode_elem.style.color = "inherit";
+        }
+
+        scale_elem.style.color = key_colour(solution.key);
+
+        next_button_elem.hidden = true;
+
+        game_state = "guessing";
+    };
+
+    new_question();
+
+    next_button_elem.addEventListener("click", new_question);
+
+    const piano_height = piano_canvas.height;
+    const piano_width = piano_canvas.width;
+
+    const natural_note_width = (piano_width - 14) / 7;
+    const sharp_height = piano_height * 0.6;
+    const sharp_width = natural_note_width / 2;
+    const sharp_pos_offset = natural_note_width - sharp_width / 2;
+
+    const render_natural_note = (idx, col) => {
+        piano_ctx.beginPath();
+        const x = natural_note_width * idx + 1;
+        const y = 1;
+        const w = natural_note_width;
+        const h = piano_height - 1;
+
+        if (col) {
+            piano_ctx.fillStyle = col;
+            piano_ctx.fillRect(x, y, w, h);
+        }
+
+        piano_ctx.rect(x, y, w, h);
+        piano_ctx.stroke();
+    };
+
+    const render_sharp_note = (idx, col) => {
+        const x = natural_note_width * idx + sharp_pos_offset;
+        const y = 0;
+        const w = sharp_width;
+        const h = sharp_height;
+
+        if (!col)
+            piano_ctx.fillStyle = "black";
+        else
+            piano_ctx.fillStyle = col;
+
+        piano_ctx.fillRect(x, y, w, h);
+    };
+
+    const render_note = (note, col) => {
+        switch (clamp_note(note)) {
+            case 0: render_natural_note(0, col); return;
+            case 1: render_sharp_note(0, col); return;
+            case 2: render_natural_note(1, col); return;
+            case 3: render_sharp_note(1, col); return;
+            case 4: render_natural_note(2, col); return;
+            case 5: render_natural_note(3, col); return;
+            case 6: render_sharp_note(3, col); return;
+            case 7: render_natural_note(4, col); return;
+            case 8: render_sharp_note(4, col); return;
+            case 9: render_natural_note(5, col); return;
+            case 10: render_sharp_note(5, col); return;
+            case 11: render_natural_note(6, col); return;
+        }
+    };
+
+    function get_mouse_pos(piano_canvas, evt) {
+        var rect = piano_canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    };
+
+    const naturals = [0, 2, 4, 5, 7, 9, 11];
+    const sharps = [1, 3, undefined, 6, 8, 10, undefined];
+
+    const major_scale = [0, 2, 4, 5, 7, 9, 11];
+    const minor_scale = [0, 2, 3, 5, 7, 8, 10];
+
+    const nth_note_off = (scale_root, major, note) => clamp_note((major ? major_scale : minor_scale)[note] + scale_root);
+
+    const hovering_over = (pos) => {
+        const { x, y } = pos;
+
+        const natural = Math.floor(x / natural_note_width);
+
+        if (y <= sharp_height) {
+            const unoffseted = x - sharp_pos_offset;
+            if (unoffseted % natural_note_width < sharp_width) {
+                const sharp = Math.floor(unoffseted / natural_note_width);
+                const note = sharps[sharp];
+                if (note !== undefined) return note;
+            }
+        }
+
+        return naturals[natural];
+    };
+
+    const update_score_counter = () => {
+        correct_count_elem.innerHTML = scores.correct.toString();
+        incorrect_count_elem.innerHTML = scores.incorrect.toString();
+    };
+
+    const make_guess = (note) => {
+        if (note === undefined || note < 0 || note > 11) return;
+
+        next_button_elem.hidden = false;
+
+        const correct = nth_note_off(solution.key, solution.major, solution.note);
+
+        if (note === correct) {
+            scores.correct += 1;
+            render_piano(undefined, undefined, note);
+        } else {
+            scores.incorrect += 1;
+            render_piano(undefined, note, correct);
+        }
+
+        update_score_counter();
+
+        game_state = "solution";
+    };
+
+    piano_canvas.addEventListener("mousemove", (e) => {
+        if (game_state !== "guessing") return;
+
+        const pos = get_mouse_pos(piano_canvas, e);
+        const note = hovering_over(pos);
+        render_piano(note);
+    });
+
+    piano_canvas.addEventListener("click", (e) => {
+        if (game_state !== "guessing") return;
+
+        const pos = get_mouse_pos(piano_canvas, e);
+        const note = hovering_over(pos);
+        make_guess(note);
+    });
+
+    const render_piano = (hovered_note, incorrect_note, correct_note) => {
+        piano_ctx.clearRect(0, 0, piano_width, piano_height);
+
+        const do_render_note = (note) => {
+            if (note === undefined) return;
+
+            let col = undefined;
+
+            if (hovered_note !== undefined && hovered_note === note) {
+                col = "gray";
+            }
+            if (incorrect_note !== undefined && incorrect_note === note) {
+                col = "red";
+            }
+            if (correct_note !== undefined && correct_note === note) {
+                col = "green";
+            }
+
+            render_note(note, col);
+        }
+
+        naturals.forEach(do_render_note);
+        sharps.forEach(do_render_note);
+
+    };
+
+    render_piano();
+    update_score_counter();
+</script>
