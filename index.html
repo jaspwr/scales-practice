@@ -109,32 +109,6 @@
         }
     }
 
-    const new_question = () => {
-        solution.key = clamp_note(Math.floor(Math.random() * 11));
-        solution.note = Math.floor(Math.random() * 7);
-        solution.major = Math.random() > 0.2;
-
-        note_elem.innerHTML = roman_numerals(solution.note + 1);
-        scale_elem.innerHTML = note_name(solution.key);
-        mode_elem.innerHTML = mode_name(solution.major);
-
-        if (!solution.major) {
-            mode_elem.style.color = "red";
-        } else {
-            mode_elem.style.color = "inherit";
-        }
-
-        scale_elem.style.color = key_colour(solution.key);
-
-        next_button_elem.hidden = true;
-
-        game_state = "guessing";
-    };
-
-    new_question();
-
-    next_button_elem.addEventListener("click", new_question);
-
     const piano_height = piano_canvas.height;
     const piano_width = piano_canvas.width;
 
@@ -290,6 +264,31 @@
 
     };
 
-    render_piano();
+    const new_question = () => {
+        solution.key = clamp_note(Math.floor(Math.random() * 11));
+        solution.note = Math.floor(Math.random() * 7);
+        solution.major = Math.random() > 0.2;
+
+        note_elem.innerHTML = roman_numerals(solution.note + 1);
+        scale_elem.innerHTML = note_name(solution.key);
+        mode_elem.innerHTML = mode_name(solution.major);
+
+        if (!solution.major) {
+            mode_elem.style.color = "red";
+        } else {
+            mode_elem.style.color = "inherit";
+        }
+
+        scale_elem.style.color = key_colour(solution.key);
+
+        next_button_elem.hidden = true;
+
+        game_state = "guessing";
+        render_piano();
+    };
+
+    new_question();
+
+    next_button_elem.addEventListener("click", new_question);
     update_score_counter();
 </script>
